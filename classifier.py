@@ -79,8 +79,6 @@ class classifier:
 
     def train_model(self, num_passes, print_loss=False):
         """This function calculates the cost function and backpropagates the error"""
-        # Gradient descent. For each batch
-        # TODO implement mini-batch and SGD
         for i in range(0, num_passes):
             selection_array = random.sample(range(self.num_examples), self.batch_size)
             batch_input = self.X[selection_array] # make sure this gets the whole set
