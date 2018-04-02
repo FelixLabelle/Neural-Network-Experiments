@@ -1,22 +1,22 @@
 import numpy as np
 
-class neuralNetwork:
+class classifier:
 
     # Activation functions are typically sigmoidal functions
     # https://en.wikipedia.org/wiki/Sigmoid_function
     # Activation functions are typically sigmoid functions, which means they are
     # Real, differntiable, bounded and have a non negative first derivative
 
-    def relu(self,node_values):
+    def relu(self, node_values):
         return (node_values > 0) * node_values
 
-    def relu_derivative(self,relu_vals):
+    def relu_derivative(self, relu_vals):
         return relu_vals > 0 
 
-    def tanh_derivative(self,tanh_vals):
-        return (1 - np.power(tanh_vals, 2))
+    def tanh_derivative(self, tanh_vals):
+        return 1 - np.power(tanh_vals, 2)
 
-    def sigmoid_derivative(self,sigmoid_vals):
+    def sigmoid_derivative(self, sigmoid_vals):
         return sigmoid_vals*(1-sigmoid_vals)
 
     def sigmoid(self,node_values):
@@ -30,12 +30,13 @@ class neuralNetwork:
         self.Y = np.array([])
         self.num_examples = 0
 
-    def loadData(self,x,y):
+    def loadData(self, x, y):
         self.X = x
         self.Y = y
         self.num_examples = len(self.X)  # training set size
 
-    def configureNeuralNetwork(self,numberOfInputs,numberOfClasses,numberOfHiddenNeurons = 5,epsilon = 1e-5,reg_lambda = 1e-2, activationFunction = "tanh"):
+    def configureNeuralNetwork(self, numberOfInputs, numberOfClasses, numberOfHiddenNeurons = 5,
+                               epsilon = 1e-5, reg_lambda = 1e-2, activationFunction = "tanh"):
         # Gradient descent parameters, play with these and see their effects
         self.epsilon = epsilon
         self.reg_lambda = reg_lambda
@@ -43,7 +44,8 @@ class neuralNetwork:
         # find how to concatenate the middle one properly
         self.model = {}
         # creates a random matrix that is inputs by outputs
-        self.weights = [np.random.randn(self.layers[i], self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
+        self.weights = [np.random.randn(self.layers[i],
+                                        self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
         self.biases = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
         self.a = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
 
@@ -112,7 +114,7 @@ class neuralNetwork:
         return 1. / self.num_examples * data_loss
 
     # TODO make this method private
-    def forward_prop(self,x):
+    def forward_prop(self, x):
         z = x.dot(self.weights[0]) + self.biases[0]
         self.a[0] = self.activation_function(z)
         for i in range(1,len(self.layers) - 1):
