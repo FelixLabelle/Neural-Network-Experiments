@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from sklearn import preprocessing
 
 class classifier:
     """This class implements a classifier with a variable number
@@ -35,8 +36,8 @@ class classifier:
         self.Y = np.array([])
         self.num_examples = 0
 
-
-    def load_data(self, x, y):
+    # TODO implement normalization of your data
+    def load_data(self, x, y, normalize_data = False):
         """Method loads training data"""
         self.X = x
         self.Y = y
@@ -44,17 +45,15 @@ class classifier:
         if self.batch_size == -1:
             self.batch_size = len(self.X)
 
+        if normalize_data:
+            self.X = preprocessing.scale(self.X)
+
+    # Todo add choice of classifier, as an external class
     def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
-                               epsilon = 1e-5, reg_lambda = 1e-2, activation_function = "tanh",
-                             batch_size = -1):
+                               activation_function = "tanh",batch_size = -1):
         """Sets training and neural network configurations"""
-        # Gradient descent parameters, play with these and see their effects
-        self.epsilon = epsilon
-        self.reg_lambda = reg_lambda
         self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
-        # find how to concatenate the middle one properly
         self.model = {}
-        # creates a random matrix that is inputs by outputs
         self.weights = [np.random.randn(self.layers[i],
                                         self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
         self.biases = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
@@ -75,9 +74,9 @@ class classifier:
             self.activation_function = self.relu
             self.activation_derivative = self.relu_derivative
 
-
-
-    def train_model(self, num_passes, print_loss=False):
+    # Todo implement annealing method for the learning rate
+    def train_model(self, num_passes, epsilon = 1e-5, reg_lambda = 1e-2,
+                    print_loss=False, anneal = False):
         """This function calculates the cost function and backpropagates the error"""
         for i in range(0, num_passes):
             selection_array = random.sample(range(self.num_examples), self.batch_size)
@@ -93,24 +92,21 @@ class classifier:
 
             for i in range(len(self.layers) - 2,0,-1):
                 dW[i] = (self.a[i-1].T).dot(derivative)
-                dW[i] += self.reg_lambda *self.weights[i]
+                dW[i] += reg_lambda *self.weights[i]
                 db[i] = np.sum(derivative, axis=0, keepdims=True)
                 derivative = derivative.dot(self.weights[i].T) * self.activation_derivative(self.a[i-1])
 
             dW[0] = np.dot(batch_input.T, derivative)
-            dW[0] += self.reg_lambda * self.weights[0]
+            dW[0] += reg_lambda * self.weights[0]
             db[0] = np.sum(derivative, axis=0)
 
             # Gradient descent parameter update
-            # Consider implementing an annealing schedule here on labmda (the learning rate)
             for i in range(0, len(self.layers) - 1):
-                self.weights[i] -= self.epsilon * dW[i]
-                self.biases[i] -= self.epsilon * db[i]
+                self.weights[i] -= epsilon * dW[i]
+                self.biases[i] -= epsilon * db[i]
 
             if print_loss and i % 1000 == 0:
                 print("Loss after iteration %i: %f" % (i, self.calculate_loss()))
-
-        #return [self.weights,self.biases]
 
     def predict(self, x):
         """ Predicts output values of a given dataset"""
