@@ -1,5 +1,4 @@
 import numpy as np
-import random
 from sklearn import preprocessing
 
 class classifier:
@@ -29,12 +28,11 @@ class classifier:
         # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
         return 1/(1+np.exp(-node_values)) # Todo how to combat numerical issues?
 
-    # This method introduces an error, the intial learning rate will be too small by a factor of step_factor
     def step_annealing(self,epsilon,current_iteration,hyperparameters):
         """Reduces the learning rate by step_factor for in a step like fashion"""
         [reduction_interval, step_factor] = hyperparameters
         num_epochs = np.floor((self.batch_size*current_iteration)/self.num_examples)
-        return epsilon * step_factor**np.ceil(reduction_interval/num_epochs)
+        return epsilon * step_factor**np.ceil(num_epochs/reduction_interval)
 
     def fixed_rate_annealing(self,epsilon,current_iteration,hyperparameters):
         """Reduces the learning rate by step_factor using an exponential function"""
@@ -107,10 +105,9 @@ class classifier:
             learning_function = self.fixed_learning_rate
 
         for i in range(0, num_iterations):
-            #random_indices = np.arange(self.num_examples)
-            #np.random.shuffle(random_indices)
-            #selection_array = random_indices[0:self.batch_size]
-            selection_array = random.sample(range(self.num_examples), self.batch_size)
+            random_indices = np.arange(self.num_examples)
+            np.random.shuffle(random_indices)
+            selection_array = random_indices[0:self.batch_size]
             batch_input = self.X[selection_array] # make sure this gets the whole set
             batch_output = self.Y[selection_array]
 
