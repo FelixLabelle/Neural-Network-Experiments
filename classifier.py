@@ -34,7 +34,7 @@ class classifier:
         """Reduces the learning rate by step_factor for in a step like fashion"""
         [reduction_interval, step_factor] = hyperparameters
         num_epochs = np.floor((self.batch_size*current_iteration)/self.num_examples)
-        return epsilon * (np.ceil(num_epochs/reduction_interval)*step_factor)
+        return epsilon * step_factor**np.ceil(reduction_interval/num_epochs)
 
     def fixed_rate_annealing(self,epsilon,current_iteration,hyperparameters):
         """Reduces the learning rate by step_factor using an exponential function"""
@@ -107,6 +107,9 @@ class classifier:
             learning_function = self.fixed_learning_rate
 
         for i in range(0, num_iterations):
+            #random_indices = np.arange(self.num_examples)
+            #np.random.shuffle(random_indices)
+            #selection_array = random_indices[0:self.batch_size]
             selection_array = random.sample(range(self.num_examples), self.batch_size)
             batch_input = self.X[selection_array] # make sure this gets the whole set
             batch_output = self.Y[selection_array]
