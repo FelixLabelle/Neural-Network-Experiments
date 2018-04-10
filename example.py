@@ -18,18 +18,17 @@ output_dim = 10
 
 
 # TODO develop unit testing and get comments on the current design
-# TODO of the code. Use this and further reading as a stepping stone
-# TODO for further development of the code
+# to further develop the code
 
-# Todo learn about different optimizationj approaches and the use of solvers like ADAMS
+# Todo learn about different optimization approaches and the use of solvers like ADAMS
 numberOfNeurons = [15,15,15]
-# Todo Annotation python 3.6
+# Todo Read on annotation in python 3.6
 ann = classifier()
 # Gradient descent parameters, play with these and see their effects
 ann.configure_classifier(input_dim,output_dim,hidden_layers =numberOfNeurons,activation_function='relu',
                          batch_size=500)
 ann.load_data(training_inputs,training_outputs)
-model = ann.train_model(num_passes=15000,epsilon = 1e-4)
+model = ann.train_model(num_iterations=15000,epsilon = 1e-4,anneal="step", annealing_hyperparameters=[20,0.5])
 predicted_outputs = ann.predict(validation_inputs)
 error = sum((predicted_outputs-validation_outputs) != 0)
 print(predicted_outputs-validation_outputs)

@@ -29,6 +29,27 @@ class classifier:
         # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
         return 1/(1+np.exp(-node_values)) # Todo how to combat numerical issues?
 
+    # This method introduces an error, the intial learning rate will be too small by a factor of step_factor
+    def step_annealing(self,epsilon,current_iteration,hyperparameters):
+        """Reduces the learning rate by step_factor for in a step like fashion"""
+        [reduction_interval, step_factor] = hyperparameters
+        num_epochs = np.floor((self.batch_size*current_iteration)/self.num_examples)
+        return epsilon * (np.ceil(num_epochs/reduction_interval)*step_factor)
+
+    def fixed_rate_annealing(self,epsilon,current_iteration,hyperparameters):
+        """Reduces the learning rate by step_factor using an exponential function"""
+        k = hyperparameters[0]
+        return epsilon * np.exp(-k*current_iteration)
+
+    def exponential_annealing(self,epsilon,current_iteration,hyperparameters):
+        """Reduces the learning rate by step_factor using a fixed rate"""
+        k = hyperparameters[0]
+        return epsilon / (1+k*current_iteration)
+
+    def fixed_learning_rate(self,epsilon,current_iteration,hyperparameters):
+        """Method allows for generalization by implementing annealing interface"""
+        return epsilon
+
     def __init__(self):
         # Initialize the parameters to random values. We need to learn these.
         np.random.seed(0)
@@ -59,7 +80,6 @@ class classifier:
         self.biases = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
         self.a = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
         self.batch_size = batch_size
-
         # Consider passing function via arguments
         if activation_function == 'tanh':
             self.activation_function = np.tanh
@@ -74,11 +94,19 @@ class classifier:
             self.activation_function = self.relu
             self.activation_derivative = self.relu_derivative
 
-    # Todo implement annealing method for the learning rate
-    def train_model(self, num_passes, epsilon = 1e-5, reg_lambda = 1e-2,
-                    print_loss=False, anneal = False):
+    def train_model(self, num_iterations, epsilon = 1e-5, reg_lambda = 1e-2,
+                    print_loss=False, anneal = "default",annealing_hyperparameters = [1,1]):
         """This function calculates the cost function and backpropagates the error"""
-        for i in range(0, num_passes):
+        if anneal == "step":
+            learning_function = self.step_annealing
+        elif anneal == "exponential":
+            learning_function = self.exponential_annealing
+        elif anneal == "fixed":
+            learning_function = self.fixed_rate_annealing
+        else:
+            learning_function = self.fixed_learning_rate
+
+        for i in range(0, num_iterations):
             selection_array = random.sample(range(self.num_examples), self.batch_size)
             batch_input = self.X[selection_array] # make sure this gets the whole set
             batch_output = self.Y[selection_array]
@@ -101,9 +129,10 @@ class classifier:
             db[0] = np.sum(derivative, axis=0)
 
             # Gradient descent parameter update
+            learning_rate = learning_function(epsilon, i, annealing_hyperparameters)
             for i in range(0, len(self.layers) - 1):
-                self.weights[i] -= epsilon * dW[i]
-                self.biases[i] -= epsilon * db[i]
+                self.weights[i] -= learning_rate * dW[i]
+                self.biases[i] -= learning_rate * db[i]
 
             if print_loss and i % 1000 == 0:
                 print("Loss after iteration %i: %f" % (i, self.calculate_loss()))
@@ -119,9 +148,7 @@ class classifier:
         # Calculating the loss
         corect_logprobs = -np.log(probs[range(self.num_examples), self.Y])
         data_loss = np.sum(corect_logprobs)
-        # Add regulatization term to loss (optional)
-        #data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.model['W1'])) + np.sum(np.square(self.model['W2'])) + np.sum(np.square(self.model['W3'])))
-        # Add regularization this life back later
+        # Todo: add regulatization term to loss
         return 1. / self.num_examples * data_loss
 
     def __forward_prop__(self, x):
@@ -131,7 +158,7 @@ class classifier:
         for i in range(1,len(self.layers) - 1):
             z = self.a[i-1].dot(self.weights[i]) + self.biases[i]
             self.a[i] = self.activation_function(z)
-        # Todo Investigate on how to reduce risk of numerical errors in softmax
+        # Todo: Investigate on how to reduce risk of numerical errors in softmax
         exp_scores = np.exp(z)
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return probs
