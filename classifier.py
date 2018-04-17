@@ -2,6 +2,32 @@ import numpy as np
 from sklearn import preprocessing
 
 class classifier:
+    """ Interface to be provided by all classifiers"""
+    def __init__(self):
+        self.output = 0
+
+    def classify(self,x):
+        raise NotImplementedError("Should have implemented this")
+
+    def loss_function(self,x):
+        raise NotImplementedError("Should have implemented this")
+
+class softmax_classifier(classifier):
+    """Softmax classifier"""
+
+    def __init__(self):
+        classifier.__init__()
+
+    def classify(self,x):
+        exp_scores = np.exp(x)
+        self.output = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+        return self.output
+
+    def loss_function(self,batch_size,y):
+        return self.output[range(batch_size),y] - 1
+
+
+class neural_network:
     """This class implements a classifier with a variable number
      of hidden layers and neurons for each layer"""
 
@@ -104,6 +130,10 @@ class classifier:
         else:
             learning_function = self.fixed_learning_rate
 
+        # If this doesn't work, put back in loop
+        dW = np.array([np.zeros(self.weights[i].shape) for i in range(len(self.layers)-1)])
+        db = np.array([np.zeros((1, self.layers[i + 1])) for i in range(len(self.layers) - 1)])
+
         for i in range(0, num_iterations):
             random_indices = np.arange(self.num_examples)
             np.random.shuffle(random_indices)
@@ -112,9 +142,6 @@ class classifier:
             batch_output = self.Y[selection_array]
 
             probs = self.__forward_prop__(batch_input)
-
-            dW = [np.zeros(self.weights[i].shape) for i in range(len(self.layers)-1)]
-            db = [np.zeros((1, self.layers[i + 1])) for i in range(len(self.layers) - 1)]
             derivative = probs
             derivative[range(self.batch_size),batch_output] -= 1
 
