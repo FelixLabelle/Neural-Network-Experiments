@@ -1,4 +1,4 @@
-from classifier import classifier
+from classifier import neural_network
 import numpy as np
 from sklearn import preprocessing
 from sklearn.datasets import fetch_mldata
@@ -23,9 +23,10 @@ output_dim = 10
 # to further develop the code
 
 # Todo learn about different optimization approaches and the use of solvers like ADAMS
+# Todo Implement hyperparameter optimization
 numberOfNeurons = [15,15,15]
 # Todo Read on annotation in python 3.6
-ann = classifier()
+ann = neural_network()
 # Gradient descent parameters, play with these and see their effects
 ann.configure_classifier(input_dim,output_dim,hidden_layers =numberOfNeurons,activation_function='relu',
                          batch_size=500)

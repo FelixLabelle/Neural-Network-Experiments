@@ -2,6 +2,33 @@ import numpy as np
 from sklearn import preprocessing
 
 class classifier:
+    """ Interface to be provided by all classifiers"""
+    def __init__(self):
+        pass
+    def predict(self,x):
+        raise NotImplementedError("Should have implemented this")
+
+    def loss_function(self,x):
+        raise NotImplementedError("Should have implemented this")
+
+class softmax_classifier(classifier):
+    """Softmax classifier"""
+
+    def __init__(self):
+        classifier.__init__(self)
+
+    # Todo: Investigate on how to reduce risk of numerical errors in softmax
+    def predict(self,x):
+        exp_scores = np.exp(x)
+        return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+
+    def loss_function(self,probs,batch_size,y):
+        derivative = probs
+        derivative[range(batch_size), y] -= 1
+        return derivative
+
+
+class neural_network:
     """This class implements a classifier with a variable number
      of hidden layers and neurons for each layer"""
 
@@ -69,7 +96,7 @@ class classifier:
 
     # Todo add choice of classifier, as an external class
     def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
-                               activation_function = "tanh",batch_size = -1):
+                               activation_function = "tanh",batch_size = -1, type = "classifier"):
         """Sets training and neural network configurations"""
         self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
         self.model = {}
@@ -92,6 +119,13 @@ class classifier:
             self.activation_function = self.relu
             self.activation_derivative = self.relu_derivative
 
+        if type == "classifier":
+            self.output_layer = softmax_classifier()
+        elif type == "regression":
+            pass
+        else:
+            self.output_layer = softmax_classifier()
+
     def train_model(self, num_iterations, epsilon = 1e-5, reg_lambda = 1e-2,
                     print_loss=False, anneal = "default",annealing_hyperparameters = [1,1]):
         """This function calculates the cost function and backpropagates the error"""
@@ -104,6 +138,10 @@ class classifier:
         else:
             learning_function = self.fixed_learning_rate
 
+        # If this doesn't work, put back in loop
+        dW = [np.zeros(self.weights[i].shape) for i in range(len(self.layers)-1)]
+        db = [np.zeros((1, self.layers[i + 1])) for i in range(len(self.layers) - 1)]
+
         for i in range(0, num_iterations):
             random_indices = np.arange(self.num_examples)
             np.random.shuffle(random_indices)
@@ -112,11 +150,7 @@ class classifier:
             batch_output = self.Y[selection_array]
 
             probs = self.__forward_prop__(batch_input)
-
-            dW = [np.zeros(self.weights[i].shape) for i in range(len(self.layers)-1)]
-            db = [np.zeros((1, self.layers[i + 1])) for i in range(len(self.layers) - 1)]
-            derivative = probs
-            derivative[range(self.batch_size),batch_output] -= 1
+            derivative = self.output_layer.loss_function(probs, self.batch_size, batch_output)
 
             for i in range(len(self.layers) - 2,0,-1):
                 dW[i] = (self.a[i-1].T).dot(derivative)
@@ -134,6 +168,7 @@ class classifier:
                 self.weights[i] -= learning_rate * dW[i]
                 self.biases[i] -= learning_rate * db[i]
 
+            # TODO ADD GRADIENT CHECK
             if print_loss and i % 1000 == 0:
                 print("Loss after iteration %i: %f" % (i, self.calculate_loss()))
 
@@ -143,7 +178,7 @@ class classifier:
 
 
     def calculate_loss(self):
-        """ Evaluate error in the model """
+        """ Evaluate loss function in the model """
         probs = self.__forward_prop__(self.X)
         # Calculating the loss
         corect_logprobs = -np.log(probs[range(self.num_examples), self.Y])
@@ -158,7 +193,4 @@ class classifier:
         for i in range(1,len(self.layers) - 1):
             z = self.a[i-1].dot(self.weights[i]) + self.biases[i]
             self.a[i] = self.activation_function(z)
-        # Todo: Investigate on how to reduce risk of numerical errors in softmax
-        exp_scores = np.exp(z)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-        return probs
+        return self.output_layer.predict(z)
