@@ -23,6 +23,7 @@ output_dim = 10
 # to further develop the code
 
 # Todo learn about different optimization approaches and the use of solvers like ADAMS
+# Todo Implement hyperparameter optimization
 numberOfNeurons = [15,15,15]
 # Todo Read on annotation in python 3.6
 ann = neural_network()

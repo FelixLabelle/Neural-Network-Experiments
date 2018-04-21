@@ -23,7 +23,9 @@ class softmax_classifier(classifier):
         return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
     def loss_function(self,probs,batch_size,y):
-        return probs[range(batch_size),y] - 1
+        derivative = probs
+        derivative[range(batch_size), y] -= 1
+        return derivative
 
 
 class neural_network:
@@ -148,12 +150,7 @@ class neural_network:
             batch_output = self.Y[selection_array]
 
             probs = self.__forward_prop__(batch_input)
-            '''
-            derivative = self.output_layer.loss_function(probs,self.batch_size,batch_output)
-            '''
-
-            derivative = probs
-            derivative[range(self.batch_size),batch_output] -= 1
+            derivative = self.output_layer.loss_function(probs, self.batch_size, batch_output)
 
             for i in range(len(self.layers) - 2,0,-1):
                 dW[i] = (self.a[i-1].T).dot(derivative)
@@ -181,7 +178,7 @@ class neural_network:
 
 
     def calculate_loss(self):
-        """ Evaluate error in the model """
+        """ Evaluate loss function in the model """
         probs = self.__forward_prop__(self.X)
         # Calculating the loss
         corect_logprobs = -np.log(probs[range(self.num_examples), self.Y])
