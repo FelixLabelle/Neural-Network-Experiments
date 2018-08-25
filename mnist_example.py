@@ -1,4 +1,4 @@
-from classifier import neural_network
+from neural_network import neural_network
 import numpy as np
 from sklearn import preprocessing
 from sklearn.datasets import fetch_mldata
