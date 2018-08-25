@@ -94,18 +94,7 @@ class neural_network:
         if normalize_data:
             self.X = preprocessing.scale(self.X)
 
-    # Todo add choice of classifier, as an external class
-    def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
-                               activation_function = "tanh",batch_size = -1, type = "classifier"):
-        """Sets training and neural network configurations"""
-        self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
-        self.model = {}
-        self.weights = [np.random.randn(self.layers[i],
-                                        self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
-        self.biases = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
-        self.a = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
-        self.batch_size = batch_size
-        # Consider passing function via arguments
+    def set_activation_function(self,activation_function):
         if activation_function == 'tanh':
             self.activation_function = np.tanh
             self.activation_derivative = self.tanh_derivative
@@ -119,6 +108,7 @@ class neural_network:
             self.activation_function = self.relu
             self.activation_derivative = self.relu_derivative
 
+    def set_classifier(self,type):
         if type == "classifier":
             self.output_layer = softmax_classifier()
         elif type == "regression":
@@ -126,19 +116,37 @@ class neural_network:
         else:
             self.output_layer = softmax_classifier()
 
-    def train_model(self, num_iterations, epsilon = 1e-5, reg_lambda = 1e-2,
-                    print_loss=False, anneal = "default",annealing_hyperparameters = [1,1]):
-        """This function calculates the cost function and backpropagates the error"""
-        if anneal == "step":
-            learning_function = self.step_annealing
-        elif anneal == "exponential":
-            learning_function = self.exponential_annealing
-        elif anneal == "fixed":
-            learning_function = self.fixed_rate_annealing
+    def set_annealing_rate(self,anneal_rate):
+        if anneal_rate == "step":
+            self.learning_function = self.step_annealing
+        elif anneal_rate == "exponential":
+            self.learning_function = self.exponential_annealing
+        elif anneal_rate == "fixed":
+            self.learning_function = self.fixed_rate_annealing
         else:
-            learning_function = self.fixed_learning_rate
+            self.learning_function = self.fixed_learning_rate
 
-        # If this doesn't work, put back in loop
+    # Todo add choice of classifier, as an external class
+    def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
+                               activation_function = "tanh",batch_size = -1, type = "classifier",anneal = "default"):
+        """Sets training and neural network configurations"""
+        self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
+        self.model = {}
+        self.weights = [np.random.randn(self.layers[i],
+                                        self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
+        self.biases = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
+        self.a = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
+        self.batch_size = batch_size
+        # Consider passing function via arguments
+        self.set_activation_function(activation_function)
+        self.set_classifier(type)
+        self.set_annealing_rate(anneal)
+
+    def train_model(self, num_iterations, epsilon = 1e-5, reg_lambda = 1e-2,
+                    print_loss=False,annealing_hyperparameters = [1,1]):
+        """This function calculates the cost function and backpropagates the error"""
+
+
         dW = [np.zeros(self.weights[i].shape) for i in range(len(self.layers)-1)]
         db = [np.zeros((1, self.layers[i + 1])) for i in range(len(self.layers) - 1)]
 
@@ -163,7 +171,7 @@ class neural_network:
             db[0] = np.sum(derivative, axis=0)
 
             # Gradient descent parameter update
-            learning_rate = learning_function(epsilon, i, annealing_hyperparameters)
+            learning_rate = self.learning_function(epsilon, i, annealing_hyperparameters)
             for i in range(0, len(self.layers) - 1):
                 self.weights[i] -= learning_rate * dW[i]
                 self.biases[i] -= learning_rate * db[i]
