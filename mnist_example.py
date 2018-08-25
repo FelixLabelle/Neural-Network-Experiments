@@ -28,15 +28,16 @@ output_dim = 10
 
 # Todo learn about different optimization approaches and the use of solvers like ADAMS
 # Todo Implement hyperparameter optimization
-numberOfNeurons = [output_dim]
+numberOfNeurons = [[output_dim],[15],[25],[10,10],[10,10,10]]
 # Todo Read on annotation in python 3.6
-ann = neural_network()
-# Gradient descent parameters, play with these and see their effects
-ann.configure_classifier(input_dim,output_dim,hidden_layers =numberOfNeurons,activation_function='relu',
-                         batch_size=500,epsilon = 1e-4)
-ann.load_data(training_inputs,training_outputs)
-model = ann.train_model(num_iterations=15000)
-predicted_outputs = ann.predict(validation_inputs)
-error = sum((predicted_outputs-validation_outputs) != 0)
-print(predicted_outputs-validation_outputs)
-print("The error rate is " + str(error*100/size_validation_data) +"%")
+# How to determine the number of iterations?
+for network_arch in numberOfNeurons:
+    ann = neural_network()
+    # Gradient descent parameters, play with these and see their effects
+    ann.configure_classifier(input_dim,output_dim,hidden_layers =network_arch,activation_function='relu',
+                             batch_size=500,epsilon = 1e-4)
+    ann.load_data(training_inputs,training_outputs)
+    model = ann.train_model(num_iterations=1000)
+    predicted_outputs = ann.predict(validation_inputs)
+    error = sum((predicted_outputs-validation_outputs) != 0)
+    print("The error rate with " + str(network_arch) + "neurons is " + str(error*100/size_validation_data) +"%")

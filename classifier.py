@@ -25,3 +25,14 @@ class softmax_classifier(classifier):
         derivative = probs
         derivative[range(batch_size), y] -= 1
         return derivative
+
+class SVM_classifier(classifier):
+    """SVM classifier"""
+
+    def __init__(self):
+        pass
+    def predict(self,x):
+        raise NotImplementedError("Should have implemented this")
+
+    def loss_function(self,x):
+        raise NotImplementedError("Should have implemented this")
