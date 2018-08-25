@@ -33,9 +33,9 @@ numberOfNeurons = [output_dim]
 ann = neural_network()
 # Gradient descent parameters, play with these and see their effects
 ann.configure_classifier(input_dim,output_dim,hidden_layers =numberOfNeurons,activation_function='relu',
-                         batch_size=500)
+                         batch_size=500,epsilon = 1e-4)
 ann.load_data(training_inputs,training_outputs)
-model = ann.train_model(num_iterations=15000,epsilon = 1e-4, annealing_hyperparameters=[20,0.5])
+model = ann.train_model(num_iterations=15000)
 predicted_outputs = ann.predict(validation_inputs)
 error = sum((predicted_outputs-validation_outputs) != 0)
 print(predicted_outputs-validation_outputs)
