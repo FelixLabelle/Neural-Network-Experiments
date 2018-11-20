@@ -42,12 +42,20 @@ class learning_scheme:
             self.anneal_type = "fixed"
             self.learning_function = self.fixed_learning_rate
 
-    def get_activation_function(self):
-        return self.activation_function_type
-
-class neural_network:
-    """This class implements a classifier with a variable number
-     of hidden layers and neurons for each layer"""
+class activation_function_interface:
+    def __init__(self,activation_function):
+        if activation_function == 'tanh':
+            self.activation_function_type ='tanh'
+            self.activation_function = np.tanh
+            self.activation_derivative = self.tanh_derivative
+        elif activation_function == 'sigmoid':
+            self.activation_function_type ='sigmoid'
+            self.activation_function = self.sigmoid
+            self.activation_derivative = self.sigmoid_derivative
+        else:
+            self.activation_function_type = "relu"
+            self.activation_function = self.relu
+            self.activation_derivative = self.relu_derivative
 
     def relu(self, node_values):
         """Method implements RELU activation function"""
@@ -72,6 +80,11 @@ class neural_network:
         # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
         return 1/(1+np.exp(-node_values)) # Todo how to combat numerical issues?
 
+
+class neural_network:
+    """This class implements a classifier with a variable number
+     of hidden layers and neurons for each layer"""
+
     def __init__(self):
         # Initialize the parameters to random values. We need to learn these.
         np.random.seed(0)
@@ -91,19 +104,7 @@ class neural_network:
         if normalize_data:
             self.X = preprocessing.scale(self.X)
 
-    def set_activation_function(self,activation_function):
-        if activation_function == 'tanh':
-            self.activation_function_type ='tanh'
-            self.activation_function = np.tanh
-            self.activation_derivative = self.tanh_derivative
-        elif activation_function == 'sigmoid':
-            self.activation_function_type ='sigmoid'
-            self.activation_function = self.sigmoid
-            self.activation_derivative = self.sigmoid_derivative
-        else:
-            self.activation_function_type = "relu"
-            self.activation_function = self.relu
-            self.activation_derivative = self.relu_derivative
+
 
     def set_output(self,type):
         if type == "Regression":
@@ -119,7 +120,7 @@ class neural_network:
 
     # Todo add choice of classifier, as an external class
     def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
-                               activation_function = "tanh",batch_size = -1, type = "classifier",anneal = "default",
+                               activation_function_type = "tanh",batch_size = -1, type = "classifier",anneal = "default",
                              annealing_hyperparameters=[1, 1],epsilon = 1e-5):
         """Sets training and neural network configurations"""
         self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
@@ -132,7 +133,7 @@ class neural_network:
         # Consider passing function via arguments
         self.anneal = learning_scheme(epsilon,anneal,annealing_hyperparameters)
         self.set_output(type)
-        self.set_activation_function(activation_function)
+        self.activation_function = activation_function_interface(activation_function_type)
 
     def train_model(self, num_iterations, reg_lambda = 1e-2,
                     print_loss=False):
@@ -154,7 +155,7 @@ class neural_network:
                 dW[j] = (self.a[j-1].T).dot(derivative)
                 dW[j] += reg_lambda *self.weights[j]
                 db[j] = np.sum(derivative, axis=0, keepdims=True)
-                derivative = derivative.dot(self.weights[j].T) * self.activation_derivative(self.a[j-1])
+                derivative = derivative.dot(self.weights[j].T) * self.activation_function.activation_derivative(self.a[j-1])
 
             dW[0] = np.dot(batch_input.T, derivative)
             dW[0] += reg_lambda * self.weights[0]
@@ -187,8 +188,8 @@ class neural_network:
     def __forward_prop__(self, x):
         """ Evaluates forward propagation for a given set x"""
         z = x.dot(self.weights[0]) + self.biases[0]
-        self.a[0] = self.activation_function(z)
+        self.a[0] = self.activation_function.activation_function(z)
         for i in range(1,len(self.layers) - 1):
             z = self.a[i-1].dot(self.weights[i]) + self.biases[i]
-            self.a[i] = self.activation_function(z)
+            self.a[i] = self.activation_function.activation_function(z)
         return self.output_layer.predict(z)
