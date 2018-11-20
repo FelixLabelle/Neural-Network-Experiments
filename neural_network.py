@@ -4,34 +4,33 @@ from classifier import softmax_classifier
 
 class learning_scheme:
     """ Class which abstracts away the variables of the learning process"""
-    def step_annealing(self,current_iteration):
+    def step_annealing(self, current_iteration):
         """Reduces the learning rate by step_factor for in a step like fashion"""
         [reduction_interval, step_factor] = self.hyper_parameters
-        num_epochs = np.floor((self.batch_size*current_iteration)/self.num_examples)
-        return self.epsilon * step_factor**np.ceil(num_epochs/reduction_interval)
+        # num_epochs = np.floor((self.batch_size*current_iteration)/self.num_examples)
+        return self.epsilon * step_factor**np.ceil(current_iteration/reduction_interval)
 
-    def fixed_rate_annealing(self,current_iteration):
+    def fixed_rate_annealing(self, current_iteration):
         """Reduces the learning rate by step_factor using an exponential function"""
         k = self.hyper_parameters[0]
         return self.epsilon  * np.exp(-k*current_iteration)
 
-    def exponential_annealing(self,current_iteration):
+    def exponential_annealing(self, current_iteration):
         """Reduces the learning rate by step_factor using a fixed rate"""
         k = self.hyper_parameters[0]
         return self.epsilon  / (1+k*current_iteration)
 
-    def fixed_learning_rate(self,current_iteration):
+    def fixed_learning_rate(self, current_iteration):
         """Method allows for generalization by implementing annealing interface"""
         return self.epsilon
 
-    def __init__(self,epsilon,anneal_rate,hyper_params):
-        self.set_annealing_rate(anneal_rate,hyper_params)
-        self.set_learning_rate(epsilon)
-
-    def set_learning_rate(self,epsilon):
+    def __init__(self, epsilon, anneal_rate, hyper_params):
+        """ Intialize learning rate scheme with hyper parameters"""
+        self.set_annealing_rate(anneal_rate, hyper_params)
         self.epsilon = epsilon
 
-    def set_annealing_rate(self,anneal_rate,hyper_params):
+    def set_annealing_rate(self, anneal_rate, hyper_params):
+        """ Function that resets annealing scheme used"""
         self.hyper_parameters = hyper_params
         self.anneal_type = anneal_rate
         if anneal_rate == "step":
@@ -43,13 +42,17 @@ class learning_scheme:
             self.learning_function = self.fixed_learning_rate
 
 class activation_function_interface:
-    def __init__(self,activation_function):
+    def __init__(self, activation_function):
+        self.set_activation_function(activation_function)
+
+    def set_activation_function(self, activation_function):
+        """ Function that sets current activation function"""
         if activation_function == 'tanh':
-            self.activation_function_type ='tanh'
+            self.activation_function_type = 'tanh'
             self.activation_function = np.tanh
             self.activation_derivative = self.tanh_derivative
         elif activation_function == 'sigmoid':
-            self.activation_function_type ='sigmoid'
+            self.activation_function_type = 'sigmoid'
             self.activation_function = self.sigmoid
             self.activation_derivative = self.sigmoid_derivative
         else:
@@ -78,7 +81,7 @@ class activation_function_interface:
     def sigmoid(self, node_values):
         """Method implements sigmoid activation function"""
         # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
-        return 1/(1+np.exp(-node_values)) # Todo how to combat numerical issues?
+        return 1/(1+np.exp(-node_values))
 
 
 class neural_network:
@@ -97,7 +100,7 @@ class neural_network:
         """Method loads training data"""
         self.X = x
         self.Y = y
-        self.num_examples = len(self.X)  # training set size
+        self.num_examples = len(self.X) # training set size
         if self.batch_size == -1:
             self.batch_size = len(self.X)
 
@@ -106,7 +109,8 @@ class neural_network:
 
 
 
-    def set_output(self,type):
+    def set_output(self, type):
+        """ Select between different output types"""
         if type == "Regression":
             self.output_type = type
             pass
@@ -114,16 +118,13 @@ class neural_network:
             self.output_type = "Softmax"
             self.output_layer = softmax_classifier()
 
-    def get_output_type(self):
-        return self.output_type
-
 
     # Todo add choice of classifier, as an external class
     def configure_classifier(self, number_of_inputs, number_of_classes, hidden_layers = 5,
-                               activation_function_type = "tanh",batch_size = -1, type = "classifier",anneal = "default",
-                             annealing_hyperparameters=[1, 1],epsilon = 1e-5):
+                               activation_function_type = "tanh", batch_size = -1, type = "classifier", anneal = "default",
+                             annealing_hyperparameters=[1, 1], epsilon = 1e-5):
         """Sets training and neural network configurations"""
-        self.layers = [number_of_inputs] + hidden_layers + [number_of_classes] # rewrite this as a numpy array
+        self.layers = [number_of_inputs] + hidden_layers + [number_of_classes]
         self.model = {}
         self.weights = [np.random.randn(self.layers[i],
                                         self.layers[i+1]) / np.sqrt(self.layers[i]) for i in range(len(self.layers)-1)]
@@ -131,7 +132,7 @@ class neural_network:
         self.a = [np.zeros((1, self.layers[i+1])) for i in range(len(self.layers)-1)]
         self.batch_size = batch_size
         # Consider passing function via arguments
-        self.anneal = learning_scheme(epsilon,anneal,annealing_hyperparameters)
+        self.anneal = learning_scheme(epsilon, anneal, annealing_hyperparameters)
         self.set_output(type)
         self.activation_function = activation_function_interface(activation_function_type)
 
@@ -151,7 +152,7 @@ class neural_network:
             probs = self.__forward_prop__(batch_input)
             derivative = self.output_layer.loss_function(probs, self.batch_size, batch_output)
 
-            for j in range(len(self.layers) - 2,0,-1):
+            for j in range(len(self.layers) - 2, 0, -1):
                 dW[j] = (self.a[j-1].T).dot(derivative)
                 dW[j] += reg_lambda *self.weights[j]
                 db[j] = np.sum(derivative, axis=0, keepdims=True)
@@ -167,7 +168,6 @@ class neural_network:
                 self.weights[j] -= learning_rate * dW[j]
                 self.biases[j] -= learning_rate * db[j]
 
-            # TODO ADD GRADIENT CHECK
             if print_loss and i % 1000 == 0:
                 print("Loss after iteration %i: %f" % (i, self.calculate_loss()))
 
@@ -189,7 +189,7 @@ class neural_network:
         """ Evaluates forward propagation for a given set x"""
         z = x.dot(self.weights[0]) + self.biases[0]
         self.a[0] = self.activation_function.activation_function(z)
-        for i in range(1,len(self.layers) - 1):
+        for i in range(1, len(self.layers) - 1):
             z = self.a[i-1].dot(self.weights[i]) + self.biases[i]
             self.a[i] = self.activation_function.activation_function(z)
         return self.output_layer.predict(z)

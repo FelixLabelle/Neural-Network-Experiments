@@ -8,7 +8,7 @@ size_training_data = 5500
 size_validation_data = 500
 mnist = fetch_mldata('MNIST original')
 input_data = preprocessing.scale(np.c_[mnist.data])
-target_class = np.concatenate(np.c_[mnist.target],axis=0).astype(int)
+target_class = np.concatenate(np.c_[mnist.target], axis=0).astype(int)
 random_indices = np.arange(len(input_data))
 np.random.shuffle(random_indices)
 training_values = random_indices[0:size_training_data-1]
@@ -34,9 +34,9 @@ numberOfNeurons = [[output_dim],[15],[25],[10,10],[10,10,10]]
 for network_arch in numberOfNeurons:
     ann = neural_network()
     # Gradient descent parameters, play with these and see their effects
-    ann.configure_classifier(input_dim,output_dim,hidden_layers =network_arch,activation_function_type='relu',
-                             batch_size=500,epsilon = 1e-4)
-    ann.load_data(training_inputs,training_outputs)
+    ann.configure_classifier(input_dim, output_dim, hidden_layers =network_arch, activation_function_type= 'relu',
+                             batch_size=500, epsilon = 1e-4)
+    ann.load_data(training_inputs, training_outputs)
     model = ann.train_model(num_iterations=1000)
     predicted_outputs = ann.predict(validation_inputs)
     error = sum((predicted_outputs-validation_outputs) != 0)
