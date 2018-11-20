@@ -34,7 +34,7 @@ numberOfNeurons = [[output_dim],[15],[25],[10,10],[10,10,10]]
 for network_arch in numberOfNeurons:
     ann = neural_network()
     # Gradient descent parameters, play with these and see their effects
-    ann.configure_classifier(input_dim,output_dim,hidden_layers =network_arch,activation_function='relu',
+    ann.configure_classifier(input_dim,output_dim,hidden_layers =network_arch,activation_function_type='relu',
                              batch_size=500,epsilon = 1e-4)
     ann.load_data(training_inputs,training_outputs)
     model = ann.train_model(num_iterations=1000)
